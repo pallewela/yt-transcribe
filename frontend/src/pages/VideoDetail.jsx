@@ -3,6 +3,8 @@ import { useParams, Link } from 'react-router-dom'
 import { getVideo } from '../api'
 import StatusBadge from '../components/StatusBadge'
 import TimestampLink from '../components/TimestampLink'
+import { youtubeUrlAtTime } from '../components/TimestampLink'
+import useYouTubePlayer from '../hooks/useYouTubePlayer'
 import styles from './VideoDetail.module.css'
 
 export default function VideoDetail() {
@@ -31,6 +33,11 @@ export default function VideoDetail() {
     }
   }, [id])
 
+  const showPlayer = video && video.status === 'completed'
+  const { containerRef, isReady, error: playerError, seekTo } = useYouTubePlayer(
+    showPlayer ? video.video_id : null
+  )
+
   if (loading) return <p className={styles.loading}>Loading...</p>
   if (!video) return <p className={styles.loading}>Video not found</p>
 
@@ -41,77 +48,123 @@ export default function VideoDetail() {
     <div>
       <Link to="/" className={styles.back}>&larr; Back to dashboard</Link>
 
-      <div className={styles.header}>
-        <h1 className={styles.title}>{video.title || video.url}</h1>
-        <div className={styles.meta}>
-          <StatusBadge status={video.status} />
-          {video.transcript_source && (
-            <span className={styles.source}>
-              Transcript: {video.transcript_source === 'youtube_captions' ? 'YouTube Captions' : 'Whisper AI'}
-            </span>
+      <div className={showPlayer ? styles.twoColumn : undefined}>
+        {/* Left column: sticky video player */}
+        {showPlayer && (
+          <div className={styles.playerColumn}>
+            <div className={styles.playerSticky}>
+              <div className={styles.playerWrapper}>
+                {playerError ? (
+                  <div className={styles.playerFallback}>
+                    <p>Could not load video player.</p>
+                    <a
+                      href={youtubeUrlAtTime(video.video_id, 0)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={styles.fallbackLink}
+                    >
+                      Watch on YouTube &rarr;
+                    </a>
+                  </div>
+                ) : (
+                  <>
+                    <div ref={containerRef} className={styles.playerContainer} />
+                    {!isReady && (
+                      <div className={styles.playerLoading}>
+                        <div className={styles.spinner} />
+                        <span>Loading player...</span>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Right column: scrollable content */}
+        <div className={styles.contentColumn}>
+          <div className={styles.header}>
+            <h1 className={styles.title}>{video.title || video.url}</h1>
+            <div className={styles.meta}>
+              <StatusBadge status={video.status} />
+              {video.transcript_source && (
+                <span className={styles.source}>
+                  Transcript: {video.transcript_source === 'youtube_captions' ? 'YouTube Captions' : 'Whisper AI'}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {video.status === 'completed' && summary && (
+            <section className={styles.section}>
+              <h2 className={styles.sectionTitle}>Summary</h2>
+              <p className={styles.overview}>{summary.overview}</p>
+
+              {summary.key_points && summary.key_points.length > 0 && (
+                <div className={styles.keyPoints}>
+                  <h3 className={styles.subTitle}>Key Points</h3>
+                  <ul className={styles.pointsList}>
+                    {summary.key_points.map((kp, i) => (
+                      <li key={i} className={styles.point}>
+                        <TimestampLink
+                          videoId={video.video_id}
+                          seconds={kp.timestamp}
+                          onSeek={seekTo}
+                        />
+                        <span className={styles.pointText}>{kp.text}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </section>
+          )}
+
+          {video.status === 'failed' && video.error_message && (
+            <section className={styles.section}>
+              <h2 className={styles.sectionTitle}>Error</h2>
+              <p className={styles.error}>{video.error_message}</p>
+            </section>
+          )}
+
+          {(video.status === 'queued' || video.status === 'processing') && (
+            <section className={styles.section}>
+              <p className={styles.pending}>
+                {video.status === 'queued'
+                  ? 'This video is queued for processing. It will be transcribed and summarized shortly.'
+                  : 'This video is currently being processed. Please wait...'}
+              </p>
+            </section>
+          )}
+
+          {segments && segments.length > 0 && (
+            <section className={styles.section}>
+              <button
+                className={styles.toggleBtn}
+                onClick={() => setShowTranscript(!showTranscript)}
+              >
+                {showTranscript ? 'Hide' : 'Show'} Full Transcript ({segments.length} segments)
+              </button>
+
+              {showTranscript && (
+                <div className={styles.transcript}>
+                  {segments.map((seg, i) => (
+                    <div key={i} className={styles.segment}>
+                      <TimestampLink
+                        videoId={video.video_id}
+                        seconds={seg.start}
+                        onSeek={seekTo}
+                      />
+                      <span className={styles.segText}>{seg.text}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
           )}
         </div>
       </div>
-
-      {video.status === 'completed' && summary && (
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Summary</h2>
-          <p className={styles.overview}>{summary.overview}</p>
-
-          {summary.key_points && summary.key_points.length > 0 && (
-            <div className={styles.keyPoints}>
-              <h3 className={styles.subTitle}>Key Points</h3>
-              <ul className={styles.pointsList}>
-                {summary.key_points.map((kp, i) => (
-                  <li key={i} className={styles.point}>
-                    <TimestampLink videoId={video.video_id} seconds={kp.timestamp} />
-                    <span className={styles.pointText}>{kp.text}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </section>
-      )}
-
-      {video.status === 'failed' && video.error_message && (
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Error</h2>
-          <p className={styles.error}>{video.error_message}</p>
-        </section>
-      )}
-
-      {(video.status === 'queued' || video.status === 'processing') && (
-        <section className={styles.section}>
-          <p className={styles.pending}>
-            {video.status === 'queued'
-              ? 'This video is queued for processing. It will be transcribed and summarized shortly.'
-              : 'This video is currently being processed. Please wait...'}
-          </p>
-        </section>
-      )}
-
-      {segments && segments.length > 0 && (
-        <section className={styles.section}>
-          <button
-            className={styles.toggleBtn}
-            onClick={() => setShowTranscript(!showTranscript)}
-          >
-            {showTranscript ? 'Hide' : 'Show'} Full Transcript ({segments.length} segments)
-          </button>
-
-          {showTranscript && (
-            <div className={styles.transcript}>
-              {segments.map((seg, i) => (
-                <div key={i} className={styles.segment}>
-                  <TimestampLink videoId={video.video_id} seconds={seg.start} />
-                  <span className={styles.segText}>{seg.text}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      )}
     </div>
   )
 }

@@ -13,7 +13,23 @@ export function youtubeUrlAtTime(videoId, seconds) {
   return `https://www.youtube.com/watch?v=${videoId}&t=${Math.floor(seconds)}s`
 }
 
-export default function TimestampLink({ videoId, seconds, children }) {
+export default function TimestampLink({ videoId, seconds, onSeek, children }) {
+  const label = children || formatTimestamp(seconds)
+  const title = `Jump to ${formatTimestamp(seconds)} in video`
+
+  if (onSeek) {
+    return (
+      <button
+        type="button"
+        className={styles.link}
+        title={title}
+        onClick={() => onSeek(seconds)}
+      >
+        {label}
+      </button>
+    )
+  }
+
   const url = youtubeUrlAtTime(videoId, seconds)
   return (
     <a
@@ -21,9 +37,9 @@ export default function TimestampLink({ videoId, seconds, children }) {
       target="_blank"
       rel="noopener noreferrer"
       className={styles.link}
-      title={`Jump to ${formatTimestamp(seconds)} in video`}
+      title={title}
     >
-      {children || formatTimestamp(seconds)}
+      {label}
     </a>
   )
 }

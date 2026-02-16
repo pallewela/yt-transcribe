@@ -10,7 +10,7 @@ The system SHALL display a list of all submitted videos with their current statu
 - **THEN** the system displays a message encouraging the user to submit their first video
 
 ### Requirement: View video summary with clickable timestamps
-The system SHALL allow the user to view the full summary for a completed video, with key points linked to the corresponding moments in the YouTube video.
+The system SHALL allow the user to view the full summary for a completed video, with key points linked to the corresponding moments in the embedded YouTube player.
 
 #### Scenario: Summary displayed for completed video
 - **WHEN** the user selects a video with status "completed"
@@ -18,18 +18,18 @@ The system SHALL allow the user to view the full summary for a completed video, 
 
 #### Scenario: Clicking a timestamp in the summary
 - **WHEN** the user clicks a timestamp link on a summary key point
-- **THEN** the system opens the YouTube video in a new tab at the corresponding time (using the `?t=` URL parameter)
+- **THEN** the embedded YouTube player seeks to the corresponding time and begins playback
 
 #### Scenario: Summary not available for incomplete video
 - **WHEN** the user selects a video that is still "queued" or "processing"
 - **THEN** the system shows the current processing status and does not display a summary
 
 ### Requirement: Display timestamped transcript
-The system SHALL display the full transcript with visible timestamps that are also clickable.
+The system SHALL display the full transcript with visible timestamps that seek the embedded player when clicked.
 
 #### Scenario: Transcript displayed with timestamps
 - **WHEN** the user views the transcript section of a completed video
-- **THEN** each transcript segment is displayed with its timestamp, and clicking the timestamp opens the YouTube video at that point in a new tab
+- **THEN** each transcript segment is displayed with its timestamp, and clicking the timestamp seeks the embedded YouTube player to that point
 
 ### Requirement: Filter videos by status
 The system SHALL allow the user to filter the video list by processing status.

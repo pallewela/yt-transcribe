@@ -15,6 +15,99 @@
   color: var(--primary);
 }
 
+/* Two-column layout */
+.twoColumn {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+/* Player column */
+.playerColumn {
+  min-width: 0;
+}
+
+.playerSticky {
+  position: sticky;
+  top: 24px;
+}
+
+.playerWrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.playerContainer {
+  width: 100%;
+  height: 100%;
+}
+
+.playerContainer iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.playerLoading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  background: #000;
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(255, 255, 255, 0.15);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.playerFallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.fallbackLink {
+  color: var(--primary);
+  font-size: 0.85rem;
+}
+
+.fallbackLink:hover {
+  color: var(--primary-hover);
+}
+
+/* Content column */
+.contentColumn {
+  min-width: 0;
+}
+
 .header {
   margin-bottom: 24px;
 }
@@ -117,6 +210,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   font-size: 0.85rem;
+  cursor: pointer;
   transition: all 0.2s;
 }
 
@@ -150,4 +244,22 @@
   font-size: 0.85rem;
   line-height: 1.5;
   color: var(--text);
+}
+
+/* Responsive: collapse to single column on narrow viewports */
+@media (max-width: 768px) {
+  .twoColumn {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .playerSticky {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .playerWrapper {
+    max-height: 35vh;
+  }
 }
