@@ -1,0 +1,15 @@
+.link {
+  color: var(--primary);
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 0.8rem;
+  padding: 1px 6px;
+  background: rgba(99, 102, 241, 0.1);
+  border-radius: 4px;
+  transition: background 0.2s, color 0.2s;
+  white-space: nowrap;
+}
+
+.link:hover {
+  background: rgba(99, 102, 241, 0.2);
+  color: var(--primary-hover);
+}

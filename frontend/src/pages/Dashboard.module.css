@@ -1,0 +1,38 @@
+.filterBar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.filterBtn {
+  padding: 5px 14px;
+  font-size: 0.8rem;
+  background: var(--bg-input);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  transition: all 0.2s;
+}
+
+.filterBtn:hover {
+  color: var(--text);
+  border-color: var(--text-muted);
+}
+
+.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.active:hover {
+  color: white;
+  border-color: var(--primary-hover);
+  background: var(--primary-hover);
+}
+
+.loading {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 32px;
+}
