@@ -112,3 +112,51 @@ class TestWorkerIdlesWhenEmpty:
                 pass
 
         mock_process.assert_not_called()
+
+
+class TestStartStopWorker:
+    async def test_start_worker_returns_task_and_sets_running(self):
+        with patch("app.worker._worker_loop", new_callable=AsyncMock) as mock_loop:
+            task = await worker_module.start_worker()
+            assert worker_module._worker_running is True
+            assert asyncio.iscoroutine(task) or asyncio.isfuture(task)
+            await worker_module.stop_worker(task)
+            assert worker_module._worker_running is False
+
+    async def test_stop_worker_cancels_task_and_logs(self):
+        with patch("app.worker._worker_loop", new_callable=AsyncMock):
+            task = await worker_module.start_worker()
+            await worker_module.stop_worker(task)
+            assert task.cancelled() or task.done()
+
+
+class TestWorkerLoopEdgeCases:
+    async def test_worker_loop_breaks_on_cancelled_error(self):
+        async def mock_get_next():
+            worker_module._worker_running = False
+            raise asyncio.CancelledError()
+
+        with patch("app.database.get_next_queued_video", side_effect=mock_get_next), \
+             patch("app.database.update_video", AsyncMock()), \
+             patch.dict("os.environ", {"WORKER_POLL_INTERVAL": "0"}):
+            worker_module._worker_running = True
+            await worker_module._worker_loop()
+
+    async def test_worker_loop_handles_get_next_exception_and_continues(self):
+        call_count = 0
+
+        async def mock_get_next():
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                raise RuntimeError("DB connection lost")
+            worker_module._worker_running = False
+            return None
+
+        with patch("app.pipeline.process_video", AsyncMock()), \
+             patch("app.database.get_next_queued_video", side_effect=mock_get_next), \
+             patch("app.database.update_video", AsyncMock()), \
+             patch.dict("os.environ", {"WORKER_POLL_INTERVAL": "0"}):
+            worker_module._worker_running = True
+            await worker_module._worker_loop()
+        assert call_count == 2
