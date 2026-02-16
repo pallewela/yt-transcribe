@@ -24,16 +24,16 @@ The system SHALL seek the embedded player to a specific time when a timestamp is
 - **WHEN** the user clicks a timestamp in the transcript section
 - **THEN** the embedded player seeks to the corresponding time and begins playback
 
-### Requirement: Sticky video player layout
-The system SHALL keep the embedded video player visible while the user scrolls through summary and transcript content.
+### Requirement: Inline video player layout
+The system SHALL display the embedded video player inline within the single-column page flow, positioned below the status line and above the summary section. The player is no longer sticky or in a side column.
 
-#### Scenario: Player stays visible on desktop during scroll
-- **WHEN** the user scrolls through the key points or transcript on a viewport wider than 768px
-- **THEN** the video player remains fixed in a sticky position on the left side of the page
+#### Scenario: Player positioned inline on desktop
+- **WHEN** the user views the detail page of a completed video on any viewport width
+- **THEN** the embedded YouTube player is displayed in normal document flow below the transcription status and above the summary, without sticky positioning
 
-#### Scenario: Player stays visible on mobile during scroll
-- **WHEN** the user scrolls through content on a viewport narrower than 768px
-- **THEN** the layout collapses to a single column with the video player sticky at the top of the viewport
+#### Scenario: Player scales on narrow viewports
+- **WHEN** the user views the detail page on a narrow viewport
+- **THEN** the player scales to the full width of the container while maintaining its 16:9 aspect ratio
 
 ### Requirement: Player loading state
 The system SHALL display a loading placeholder while the YouTube player is initializing.
