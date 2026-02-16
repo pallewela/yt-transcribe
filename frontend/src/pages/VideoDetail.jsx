@@ -1,11 +1,41 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getVideo } from '../api'
 import StatusBadge from '../components/StatusBadge'
 import TimestampLink from '../components/TimestampLink'
 import { youtubeUrlAtTime } from '../components/TimestampLink'
 import useYouTubePlayer from '../hooks/useYouTubePlayer'
+import useSpeechSynthesis from '../hooks/useSpeechSynthesis'
 import styles from './VideoDetail.module.css'
+
+const highlightEnabled = import.meta.env.VITE_ENABLE_READING_HIGHLIGHT === 'true'
+
+function PlayIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="11 5 6 9 6 15 11 19 11 5" />
+      <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+      <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+    </svg>
+  )
+}
+
+function PauseIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="6" y="4" width="4" height="16" />
+      <rect x="14" y="4" width="4" height="16" />
+    </svg>
+  )
+}
+
+function StopIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4" y="4" width="16" height="16" rx="2" />
+    </svg>
+  )
+}
 
 export default function VideoDetail() {
   const { id } = useParams()
@@ -38,11 +68,27 @@ export default function VideoDetail() {
     showPlayer ? video.video_id : null
   )
 
+  const summary = video ? video.summary_json : null
+
+  const speechSegments = useMemo(() => {
+    if (!summary) return []
+    const parts = []
+    if (summary.overview) parts.push(summary.overview)
+    if (summary.key_points) {
+      summary.key_points.forEach((kp) => parts.push(kp.text))
+    }
+    return parts
+  }, [summary])
+
+  const { play, pause, stop, state: speechState, activeIndex, isSupported: speechSupported } =
+    useSpeechSynthesis(speechSegments)
+
   if (loading) return <p className={styles.loading}>Loading...</p>
   if (!video) return <p className={styles.loading}>Video not found</p>
 
-  const summary = video.summary_json
   const segments = video.transcript_segments
+  const showReadAloud = speechSupported && video.status === 'completed' && summary
+  const isHighlighting = highlightEnabled && speechState !== 'idle'
 
   return (
     <div>
@@ -65,6 +111,33 @@ export default function VideoDetail() {
             <span className={styles.source}>
               Transcript: {video.transcript_source === 'youtube_captions' ? 'YouTube Captions' : 'Whisper AI'}
             </span>
+          )}
+          {showReadAloud && speechState === 'idle' && (
+            <button
+              className={styles.readAloudBtn}
+              onClick={play}
+              title="Read aloud summary and key points"
+            >
+              <PlayIcon />
+            </button>
+          )}
+          {showReadAloud && (speechState === 'playing' || speechState === 'paused') && (
+            <div className={styles.readAloudControls}>
+              <button
+                className={styles.readAloudBtn}
+                onClick={speechState === 'playing' ? pause : play}
+                title={speechState === 'playing' ? 'Pause' : 'Resume'}
+              >
+                {speechState === 'playing' ? <PauseIcon /> : <PlayIcon />}
+              </button>
+              <button
+                className={styles.readAloudBtn}
+                onClick={stop}
+                title="Stop"
+              >
+                <StopIcon />
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -100,7 +173,9 @@ export default function VideoDetail() {
       {video.status === 'completed' && summary && (
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Summary</h2>
-          <p className={styles.overview}>{summary.overview}</p>
+          <p className={`${styles.overview}${isHighlighting && activeIndex === 0 ? ` ${styles.activeReading}` : ''}`}>
+            {summary.overview}
+          </p>
         </section>
       )}
 
@@ -110,7 +185,10 @@ export default function VideoDetail() {
           <div className={styles.keyPointsScroll}>
             <ul className={styles.pointsList}>
               {summary.key_points.map((kp, i) => (
-                <li key={i} className={styles.point}>
+                <li
+                  key={i}
+                  className={`${styles.point}${isHighlighting && activeIndex === i + 1 ? ` ${styles.activeReading}` : ''}`}
+                >
                   <TimestampLink
                     videoId={video.video_id}
                     seconds={kp.timestamp}
